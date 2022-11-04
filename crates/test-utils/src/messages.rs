@@ -6,7 +6,9 @@ use crate::{test_account_keys, test_committee, test_validator_keys};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::language_storage::TypeTag;
+use signature::Signer;
 use std::path::PathBuf;
+use std::sync::Arc;
 use sui::client_commands::WalletContext;
 use sui::client_commands::{SuiClientCommandResult, SuiClientCommands};
 use sui_adapter::genesis;
@@ -26,6 +28,7 @@ use sui_types::crypto::{
 use sui_types::gas_coin::GasCoin;
 use sui_types::messages::CallArg;
 use sui_types::messages::SignedTransactionEffects;
+use sui_types::messages::Transaction;
 use sui_types::messages::{
     CertifiedTransaction, ObjectArg, TransactionData, VerifiedCertificate,
     VerifiedSignedTransaction, VerifiedTransaction,
@@ -355,7 +358,7 @@ pub fn make_counter_increment_transaction(
     counter_id: ObjectID,
     counter_initial_shared_version: SequenceNumber,
     sender: SuiAddress,
-    keypair: &AccountKeyPair,
+    keypair: &Arc<AccountKeyPair>,
 ) -> VerifiedTransaction {
     let data = TransactionData::new_move_call(
         sender,
@@ -370,7 +373,8 @@ pub fn make_counter_increment_transaction(
         })],
         MAX_GAS,
     );
-    to_sender_signed_transaction(data, keypair)
+    let signature = keypair.sign(&data.to_bytes());
+    VerifiedTransaction::new_unchecked(Transaction::new(data, signature))
 }
 
 /// Make a transaction calling a specific move module & function.
