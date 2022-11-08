@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use bincode::{deserialize, serialize};
+use fastcrypto::encoding::encode_bytes_hex;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -243,7 +244,7 @@ impl Display for CheckpointSummary {
             gas_cost_summary: {:?}}}",
             self.epoch,
             self.sequence_number,
-            hex::encode(self.content_digest),
+            encode_bytes_hex(self.content_digest),
             self.gas_cost_summary,
         )
     }

@@ -4,7 +4,7 @@
 use crate::ValidatorInfo;
 use anyhow::{bail, Context, Result};
 use camino::Utf8Path;
-use fastcrypto::encoding::{Base64, Encoding};
+use fastcrypto::encoding::{encode_bytes_hex, Base64, Encoding};
 use fastcrypto::hash::{HashFunction, Sha3_256};
 use move_binary_format::CompiledModule;
 use move_core_types::ident_str;
@@ -32,7 +32,7 @@ use sui_types::temporary_store::{InnerTemporaryStore, TemporaryStore};
 use sui_types::MOVE_STDLIB_ADDRESS;
 use sui_types::SUI_FRAMEWORK_ADDRESS;
 use sui_types::{
-    base_types::{encode_bytes_hex, TxContext},
+    base_types::TxContext,
     committee::{Committee, EpochId},
     error::SuiResult,
     object::Object,
