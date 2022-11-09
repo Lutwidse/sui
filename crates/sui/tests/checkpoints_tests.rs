@@ -62,7 +62,7 @@ async fn execute_transactions(
 
         // If this check fails the transactions will not be included in the checkpoint.
         assert!(matches!(
-            effects.effects.status,
+            effects.data().status,
             ExecutionStatus::Success { .. }
         ));
 
@@ -327,10 +327,10 @@ async fn checkpoint_with_shared_objects() {
         .await
         .unwrap();
     assert!(matches!(
-        effects.effects.status,
+        effects.data().status,
         ExecutionStatus::Success { .. }
     ));
-    let ((counter_id, counter_initial_shared_version, _), _) = effects.effects.created[0];
+    let ((counter_id, counter_initial_shared_version, _), _) = effects.data().created[0];
     let counter_object_arg = ObjectArg::SharedObject {
         id: counter_id,
         initial_shared_version: counter_initial_shared_version,

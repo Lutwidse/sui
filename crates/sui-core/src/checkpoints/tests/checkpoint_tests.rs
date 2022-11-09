@@ -1845,7 +1845,7 @@ async fn checkpoint_messaging_flow() {
 
     // Check whether this is a success?
     assert!(matches!(
-        effects.effects.status,
+        effects.data().status,
         ExecutionStatus::Success { .. }
     ));
 
@@ -1996,7 +1996,7 @@ async fn test_no_more_fragments() {
 
     // Check whether this is a success?
     assert!(matches!(
-        effects.effects.status,
+        effects.data().status,
         ExecutionStatus::Success { .. }
     ));
 

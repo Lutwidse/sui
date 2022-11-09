@@ -6,6 +6,7 @@ use std::{
     sync::Arc,
 };
 
+use sui_types::message_envelope::Message;
 use sui_types::{
     base_types::{ExecutionDigests, TransactionDigest},
     error::{SuiError, SuiResult},
@@ -196,7 +197,7 @@ impl EffectsStore for Arc<AuthorityStore> {
             .effects
             .multi_get(transactions)?
             .into_iter()
-            .map(|item| item.map(|x| x.effects))
+            .map(|item| item.map(|x| x.into_data()))
             .collect())
     }
 }
@@ -274,6 +275,7 @@ mod tests {
     use crate::checkpoints::CheckpointStore;
     use fastcrypto::traits::KeyPair;
     use rand::{prelude::StdRng, SeedableRng};
+    use sui_types::message_envelope::Message;
     use sui_types::{
         base_types::{ExecutionDigests, ObjectDigest, ObjectID, SequenceNumber, TransactionDigest},
         gas::GasCostSummary,
