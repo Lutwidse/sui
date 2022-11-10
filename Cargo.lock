@@ -8664,6 +8664,7 @@ dependencies = [
  "multiaddr",
  "mysten-network",
  "narwhal-network",
+ "narwhal-types",
  "parking_lot 0.12.1",
  "prometheus",
  "sui-config",
