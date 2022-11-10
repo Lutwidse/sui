@@ -1666,7 +1666,8 @@ impl AuthorityState {
             &path.join("checkpoint2"),
             Box::new(store.clone()),
             LogCheckpointOutput::boxed(),
-            0,
+            LogCheckpointOutput::boxed_certified(),
+            epochs.get_latest_committee(),
         );
 
         // add the object_basics module
