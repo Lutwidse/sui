@@ -182,7 +182,7 @@ pub type CheckpointContentsDigest = [u8; 32];
 
 // The constituent parts of checkpoints, signed and certified
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct CheckpointSummary {
     pub epoch: EpochId,
     pub sequence_number: CheckpointSequenceNumber,
@@ -249,7 +249,7 @@ impl Display for CheckpointSummary {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Hash)]
 pub struct CheckpointSummaryEnvelope<S> {
     pub summary: CheckpointSummary,
     pub auth_signature: S,
@@ -436,6 +436,12 @@ impl CheckpointProposalContents {
     }
 }
 
+/// This is a message validators publish to consensus in order to sign checkpoint
+#[derive(Clone, Debug, Serialize, Deserialize, Hash)]
+pub struct SignedCheckpointData {
+    pub summary: SignedCheckpointSummary,
+}
+
 /// CheckpointContents are the transactions included in an upcoming checkpoint.
 /// They must have already been causally ordered. Since the causal order algorithm
 /// is the same among validators, we expect all honest validators to come up with
@@ -443,6 +449,12 @@ impl CheckpointProposalContents {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CheckpointContents {
     transactions: Vec<ExecutionDigests>,
+}
+
+impl SignedCheckpointData {
+    pub fn verify(&self, committee: &Committee) -> SuiResult {
+        self.summary.verify(committee, None)
+    }
 }
 
 impl CheckpointContents {
