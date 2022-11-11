@@ -280,7 +280,8 @@ async fn test_request_vote_missing_parents() {
     let (header_store, certificate_store, payload_store) = create_db_stores();
     let (tx_certificates, mut rx_certificates) = test_utils::test_channel!(100);
     let (tx_certificate_waiter, _rx_certificate_waiter) = test_utils::test_channel!(1);
-    let (tx_consensus_round_updates, rx_consensus_round_updates) = watch::channel(1u64);
+    let (_tx_consensus_round_updates, rx_consensus_round_updates) = watch::channel(1u64);
+    let (tx_narwhal_round_updates, rx_narwhal_round_updates) = watch::channel(1u64);
 
     let synchronizer = Arc::new(Synchronizer::new(
         name.clone(),
@@ -289,7 +290,7 @@ async fn test_request_vote_missing_parents() {
         certificate_store.clone(),
         payload_store.clone(),
         tx_certificate_waiter,
-        rx_consensus_round_updates.clone(),
+        rx_consensus_round_updates,
         None,
     ));
     let handler = PrimaryReceiverHandler {
@@ -303,7 +304,7 @@ async fn test_request_vote_missing_parents() {
         certificate_store: certificate_store.clone(),
         payload_store: payload_store.clone(),
         vote_digest_store: crate::common::create_test_vote_store(),
-        rx_consensus_round_updates: rx_consensus_round_updates.clone(),
+        rx_narwhal_round_updates,
         metrics: metrics.clone(),
         request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
     };
@@ -371,12 +372,12 @@ async fn test_request_vote_missing_parents() {
 
     // TEST PHASE 2: Handler should abort if round advances too much while awaiting processing
     // of certs.
-    let tx_consensus_round_updates = Arc::new(tx_consensus_round_updates);
+    let tx_narwhal_round_updates = Arc::new(tx_narwhal_round_updates);
     {
-        let tx_consensus_round_updates = tx_consensus_round_updates.clone();
+        let tx_narwhal_round_updates = tx_narwhal_round_updates.clone();
         tokio::task::spawn(async move {
             tokio::time::sleep(Duration::from_millis(100)).await;
-            let _ = tx_consensus_round_updates.send(3);
+            let _ = tx_narwhal_round_updates.send(3);
         });
     }
     let mut request = anemo::Request::new(RequestVoteRequest {
@@ -401,7 +402,7 @@ async fn test_request_vote_missing_parents() {
 
     // TEST PHASE 3: Handler should process missing certificates and report back
     // any errors.
-    let _ = tx_consensus_round_updates.send(1);
+    let _ = tx_narwhal_round_updates.send(1);
     tokio::task::spawn(async move {
         while let Some((_certificate, tx_notify)) = rx_certificates.recv().await {
             let _ = tx_notify.unwrap().send(Err(DagError::Canceled));
@@ -447,6 +448,7 @@ async fn test_request_vote_missing_batches() {
     let (tx_certificates, _rx_certificates) = test_utils::test_channel!(100);
     let (tx_certificate_waiter, _rx_certificate_waiter) = test_utils::test_channel!(1);
     let (_tx_consensus_round_updates, rx_consensus_round_updates) = watch::channel(1u64);
+    let (_tx_narwhal_round_updates, rx_narwhal_round_updates) = watch::channel(1u64);
 
     let synchronizer = Arc::new(Synchronizer::new(
         name.clone(),
@@ -455,7 +457,7 @@ async fn test_request_vote_missing_batches() {
         certificate_store.clone(),
         payload_store.clone(),
         tx_certificate_waiter,
-        rx_consensus_round_updates.clone(),
+        rx_consensus_round_updates,
         None,
     ));
     let handler = PrimaryReceiverHandler {
@@ -469,7 +471,7 @@ async fn test_request_vote_missing_batches() {
         certificate_store: certificate_store.clone(),
         payload_store: payload_store.clone(),
         vote_digest_store: crate::common::create_test_vote_store(),
-        rx_consensus_round_updates: rx_consensus_round_updates.clone(),
+        rx_narwhal_round_updates,
         metrics: metrics.clone(),
         request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
     };
@@ -565,6 +567,7 @@ async fn test_request_vote_already_voted() {
     let (tx_certificates, _rx_certificates) = test_utils::test_channel!(100);
     let (tx_certificate_waiter, _rx_certificate_waiter) = test_utils::test_channel!(1);
     let (_tx_consensus_round_updates, rx_consensus_round_updates) = watch::channel(1u64);
+    let (_tx_narwhal_round_updates, rx_narwhal_round_updates) = watch::channel(1u64);
 
     let synchronizer = Arc::new(Synchronizer::new(
         name.clone(),
@@ -573,7 +576,7 @@ async fn test_request_vote_already_voted() {
         certificate_store.clone(),
         payload_store.clone(),
         tx_certificate_waiter,
-        rx_consensus_round_updates.clone(),
+        rx_consensus_round_updates,
         None,
     ));
     let handler = PrimaryReceiverHandler {
@@ -587,7 +590,7 @@ async fn test_request_vote_already_voted() {
         certificate_store: certificate_store.clone(),
         payload_store: payload_store.clone(),
         vote_digest_store: crate::common::create_test_vote_store(),
-        rx_consensus_round_updates: rx_consensus_round_updates.clone(),
+        rx_narwhal_round_updates,
         metrics: metrics.clone(),
         request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
     };
@@ -716,6 +719,7 @@ async fn test_fetch_certificates_handler() {
     let (tx_certificates, _) = test_utils::test_channel!(1);
     let (tx_certificate_waiter, _rx_certificate_waiter) = test_utils::test_channel!(1);
     let (_tx_consensus_round_updates, rx_consensus_round_updates) = watch::channel(0u64);
+    let (_tx_narwhal_round_updates, rx_narwhal_round_updates) = watch::channel(1u64);
 
     let synchronizer = Arc::new(Synchronizer::new(
         name.clone(),
@@ -738,7 +742,7 @@ async fn test_fetch_certificates_handler() {
         certificate_store: certificate_store.clone(),
         payload_store: payload_store.clone(),
         vote_digest_store: crate::common::create_test_vote_store(),
-        rx_consensus_round_updates: rx_consensus_round_updates.clone(),
+        rx_narwhal_round_updates,
         metrics: metrics.clone(),
         request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
     };
@@ -877,6 +881,7 @@ async fn test_process_payload_availability_success() {
     let (tx_certificates, _) = test_utils::test_channel!(1);
     let (tx_certificate_waiter, _rx_certificate_waiter) = test_utils::test_channel!(1);
     let (_tx_consensus_round_updates, rx_consensus_round_updates) = watch::channel(0u64);
+    let (_tx_narwhal_round_updates, rx_narwhal_round_updates) = watch::channel(1u64);
 
     let synchronizer = Arc::new(Synchronizer::new(
         name.clone(),
@@ -885,7 +890,7 @@ async fn test_process_payload_availability_success() {
         certificate_store.clone(),
         payload_store.clone(),
         tx_certificate_waiter,
-        rx_consensus_round_updates.clone(),
+        rx_consensus_round_updates,
         None,
     ));
     let handler = PrimaryReceiverHandler {
@@ -899,7 +904,7 @@ async fn test_process_payload_availability_success() {
         certificate_store: certificate_store.clone(),
         payload_store: payload_store.clone(),
         vote_digest_store: crate::common::create_test_vote_store(),
-        rx_consensus_round_updates: rx_consensus_round_updates.clone(),
+        rx_narwhal_round_updates,
         metrics: metrics.clone(),
         request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
     };
@@ -1020,6 +1025,7 @@ async fn test_process_payload_availability_when_failures() {
     let (tx_certificates, _) = test_utils::test_channel!(1);
     let (tx_certificate_waiter, _rx_certificate_waiter) = test_utils::test_channel!(1);
     let (_tx_consensus_round_updates, rx_consensus_round_updates) = watch::channel(0u64);
+    let (_tx_narwhal_round_updates, rx_narwhal_round_updates) = watch::channel(1u64);
 
     let synchronizer = Arc::new(Synchronizer::new(
         name.clone(),
@@ -1028,7 +1034,7 @@ async fn test_process_payload_availability_when_failures() {
         certificate_store.clone(),
         payload_store.clone(),
         tx_certificate_waiter,
-        rx_consensus_round_updates.clone(),
+        rx_consensus_round_updates,
         None,
     ));
     let handler = PrimaryReceiverHandler {
@@ -1042,7 +1048,7 @@ async fn test_process_payload_availability_when_failures() {
         certificate_store: certificate_store.clone(),
         payload_store: payload_store.clone(),
         vote_digest_store: crate::common::create_test_vote_store(),
-        rx_consensus_round_updates: rx_consensus_round_updates.clone(),
+        rx_narwhal_round_updates,
         metrics: metrics.clone(),
         request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
     };

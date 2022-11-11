@@ -22,6 +22,7 @@ async fn propose_empty() {
     let (_tx_commited_own_headers, rx_commited_own_headers) = test_utils::test_channel!(1);
     let (_tx_our_digests, rx_our_digests) = test_utils::test_channel!(1);
     let (tx_headers, mut rx_headers) = test_utils::test_channel!(1);
+    let (tx_narwhal_round_updates, _rx_narwhal_round_updates) = watch::channel(0u64);
 
     let metrics = Arc::new(PrimaryMetrics::new(&Registry::new()));
 
@@ -39,6 +40,7 @@ async fn propose_empty() {
         /* rx_core */ rx_parents,
         /* rx_workers */ rx_our_digests,
         /* tx_core */ tx_headers,
+        tx_narwhal_round_updates,
         rx_commited_own_headers,
         metrics,
     );
@@ -65,6 +67,7 @@ async fn propose_payload() {
     let (tx_our_digests, rx_our_digests) = test_utils::test_channel!(1);
     let (_tx_commited_own_headers, rx_commited_own_headers) = test_utils::test_channel!(1);
     let (tx_headers, mut rx_headers) = test_utils::test_channel!(1);
+    let (tx_narwhal_round_updates, _rx_narwhal_round_updates) = watch::channel(0u64);
 
     let metrics = Arc::new(PrimaryMetrics::new(&Registry::new()));
 
@@ -85,6 +88,7 @@ async fn propose_payload() {
         /* rx_core */ rx_parents,
         /* rx_workers */ rx_our_digests,
         /* tx_core */ tx_headers,
+        tx_narwhal_round_updates,
         rx_commited_own_headers,
         metrics,
     );
@@ -171,6 +175,7 @@ async fn equivocation_protection() {
     let (tx_parents, rx_parents) = test_utils::test_channel!(1);
     let (tx_our_digests, rx_our_digests) = test_utils::test_channel!(1);
     let (tx_headers, mut rx_headers) = test_utils::test_channel!(1);
+    let (tx_narwhal_round_updates, _rx_narwhal_round_updates) = watch::channel(0u64);
     let (_tx_commited_own_headers, rx_commited_own_headers) = test_utils::test_channel!(1);
     let metrics = Arc::new(PrimaryMetrics::new(&Registry::new()));
 
@@ -189,6 +194,7 @@ async fn equivocation_protection() {
         /* rx_core */ rx_parents,
         /* rx_workers */ rx_our_digests,
         /* tx_core */ tx_headers,
+        tx_narwhal_round_updates,
         rx_commited_own_headers,
         metrics,
     );
@@ -237,6 +243,7 @@ async fn equivocation_protection() {
     let (tx_parents, rx_parents) = test_utils::test_channel!(1);
     let (tx_our_digests, rx_our_digests) = test_utils::test_channel!(1);
     let (tx_headers, mut rx_headers) = test_utils::test_channel!(1);
+    let (tx_narwhal_round_updates, _rx_narwhal_round_updates) = watch::channel(0u64);
     let (_tx_commited_own_headers, rx_commited_own_headers) = test_utils::test_channel!(1);
     let metrics = Arc::new(PrimaryMetrics::new(&Registry::new()));
 
@@ -254,6 +261,7 @@ async fn equivocation_protection() {
         /* rx_core */ rx_parents,
         /* rx_workers */ rx_our_digests,
         /* tx_core */ tx_headers,
+        tx_narwhal_round_updates,
         rx_commited_own_headers,
         metrics,
     );

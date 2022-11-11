@@ -69,6 +69,8 @@ pub struct Proposer {
     proposer_store: ProposerStore,
     /// The current round of the dag.
     round: Round,
+    /// Signals a new narwhal round
+    tx_narwhal_round_updates: watch::Sender<Round>,
     /// Holds the certificates' ids waiting to be included in the next header.
     last_parents: Vec<Certificate>,
     /// Holds the certificate of the last leader (if any).
@@ -103,6 +105,7 @@ impl Proposer {
         rx_parents: Receiver<(Vec<Certificate>, Round, Epoch)>,
         rx_our_digests: Receiver<OurDigestMessage>,
         tx_headers: Sender<Header>,
+        tx_narwhal_round_updates: watch::Sender<Round>,
         rx_commited_own_headers: Receiver<(Round, Vec<Round>)>,
         metrics: Arc<PrimaryMetrics>,
     ) -> JoinHandle<()> {
@@ -120,6 +123,7 @@ impl Proposer {
                 rx_parents,
                 rx_our_digests,
                 tx_headers,
+                tx_narwhal_round_updates,
                 proposer_store,
                 round: 0,
                 last_parents: genesis,
@@ -213,6 +217,7 @@ impl Proposer {
         self.committee = committee;
 
         self.round = 0;
+        let _ = self.tx_narwhal_round_updates.send(self.round);
         self.last_parents = Certificate::genesis(&self.committee);
     }
 
@@ -328,8 +333,8 @@ impl Proposer {
                 }
 
                 // Advance to the next round.
-
                 self.round += 1;
+                let _ = self.tx_narwhal_round_updates.send(self.round);
                 self.metrics
                     .current_round
                     .with_label_values(&[&self.committee.epoch.to_string()])
@@ -361,7 +366,6 @@ impl Proposer {
             }
 
             tokio::select! {
-
                 Some((commit_round, commit_headers)) = self.rx_commited_own_headers.recv() => {
                     // Remove committed headers from the list of pending
                     for round in &commit_headers {
@@ -381,7 +385,9 @@ impl Proposer {
                             break;
                         }
 
-                        digests_to_resend.extend(header.payload.iter().map(|(digest, worker)| (*digest, *worker, 0)));
+                        digests_to_resend.extend(
+                            header.payload.iter().map(|(digest, worker)| (*digest, *worker, 0))
+                        );
                         retransmit_rounds.push(*round_header);
                     }
 
@@ -395,7 +401,11 @@ impl Proposer {
                             self.proposed_headers.remove(round);
                         }
 
-                        debug!("Retransmit batches in undelivered headers {:?} at commit round {:?}", retransmit_rounds, commit_round);
+                        debug!(
+                            "Retransmit batches in undelivered headers {:?} at commit round {:?}",
+                            retransmit_rounds,
+                            commit_round
+                        );
                     }
                 },
 
@@ -432,6 +442,7 @@ impl Proposer {
                             // We accept round bigger than our current round to jump ahead in case we were
                             // late (or just joined the network).
                             self.round = round;
+                            let _ = self.tx_narwhal_round_updates.send(self.round);
                             self.last_parents = parents;
 
                         },
@@ -463,13 +474,12 @@ impl Proposer {
                 }
 
                 // Receive digests from our workers.
-                Some( OurDigestMessage {
-                        digest,
-                        worker_id,
-                        timestamp,
-                        ack_channel,
-
-                    }) = self.rx_our_digests.recv() => {
+                Some(OurDigestMessage {
+                    digest,
+                    worker_id,
+                    timestamp,
+                    ack_channel,
+                }) = self.rx_our_digests.recv() => {
                     let digest_record = (digest, worker_id, timestamp, );
                     self.digests.push(digest_record);
                     // Signal back to the worker that the batch is recorded on the
