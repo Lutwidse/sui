@@ -12,6 +12,7 @@ use bincode::Options;
 use config::{Parameters, WorkerId};
 use consensus::{dag::Dag, metrics::ConsensusMetrics};
 use crypto::PublicKey;
+use dashmap::DashSet;
 use fastcrypto::{hash::Hash, traits::KeyPair, SignatureService};
 use itertools::Itertools;
 use prometheus::Registry;
@@ -19,7 +20,7 @@ use std::{
     borrow::Borrow,
     collections::{BTreeSet, HashMap, HashSet},
     num::NonZeroUsize,
-    sync::{Arc, Mutex},
+    sync::Arc,
     time::Duration,
 };
 use storage::NodeStorage;
@@ -306,7 +307,7 @@ async fn test_request_vote_missing_parents() {
         vote_digest_store: crate::common::create_test_vote_store(),
         rx_narwhal_round_updates,
         metrics: metrics.clone(),
-        request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
+        request_vote_inflight: Arc::new(DashSet::new()),
     };
 
     // Make some mock certificates that are parents of our new header.
@@ -473,7 +474,7 @@ async fn test_request_vote_missing_batches() {
         vote_digest_store: crate::common::create_test_vote_store(),
         rx_narwhal_round_updates,
         metrics: metrics.clone(),
-        request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
+        request_vote_inflight: Arc::new(DashSet::new()),
     };
 
     // Make some mock certificates that are parents of our new header.
@@ -592,7 +593,7 @@ async fn test_request_vote_already_voted() {
         vote_digest_store: crate::common::create_test_vote_store(),
         rx_narwhal_round_updates,
         metrics: metrics.clone(),
-        request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
+        request_vote_inflight: Arc::new(DashSet::new()),
     };
 
     // Make some mock certificates that are parents of our new header.
@@ -744,7 +745,7 @@ async fn test_fetch_certificates_handler() {
         vote_digest_store: crate::common::create_test_vote_store(),
         rx_narwhal_round_updates,
         metrics: metrics.clone(),
-        request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
+        request_vote_inflight: Arc::new(DashSet::new()),
     };
 
     let mut current_round: Vec<_> = Certificate::genesis(&fixture.committee())
@@ -906,7 +907,7 @@ async fn test_process_payload_availability_success() {
         vote_digest_store: crate::common::create_test_vote_store(),
         rx_narwhal_round_updates,
         metrics: metrics.clone(),
-        request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
+        request_vote_inflight: Arc::new(DashSet::new()),
     };
 
     // GIVEN some mock certificates
@@ -1050,7 +1051,7 @@ async fn test_process_payload_availability_when_failures() {
         vote_digest_store: crate::common::create_test_vote_store(),
         rx_narwhal_round_updates,
         metrics: metrics.clone(),
-        request_vote_inflight: Arc::new(Mutex::new(HashSet::new())),
+        request_vote_inflight: Arc::new(DashSet::new()),
     };
 
     // AND some mock certificates
