@@ -9,7 +9,6 @@ import {
     getTransactionKindName,
     getTransferObjectTransaction,
     getTransferSuiTransaction,
-    getTransferSuiAmount,
     SUI_TYPE_ARG,
     type GetTxnDigestsResponse,
     type CertifiedTransaction,
@@ -23,6 +22,7 @@ import { ReactComponent as ContentSuccessStatus } from '../../assets/SVGIcons/12
 import { ReactComponent as ContentFailedStatus } from '../../assets/SVGIcons/12px/X.svg';
 import { ReactComponent as ContentArrowRight } from '../../assets/SVGIcons/16px/ArrowRight.svg';
 import Longtext from '../../components/longtext/Longtext';
+import { getAmount } from '../../utils/getAmout';
 import { deduplicate } from '../../utils/searchUtil';
 import { truncate } from '../../utils/stringUtils';
 import { useTimeAgo } from '../../utils/timeUtils';
@@ -258,11 +258,14 @@ export const getDataOnTxDigests = (
                             getTransferObjectTransaction(txn)?.recipient ||
                             getTransferSuiTransaction(txn)?.recipient;
 
+                        const amount = getAmount(txn, txEff.effects)?.[0]
+                            .amount;
+
                         return {
                             txId: digest,
                             status: getExecutionStatusType(txEff)!,
                             txGas: getTotalGasUsed(txEff),
-                            suiAmount: getTransferSuiAmount(txn),
+                            suiAmount: amount,
                             kind: txKind,
                             From: res.data.sender,
                             timestamp_ms: txEff.timestamp_ms,
